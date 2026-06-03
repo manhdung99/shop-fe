@@ -176,12 +176,13 @@ const pageTitle = computed(() => {
   return 'Tất cả sản phẩm'
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (defaultCategory.value) {
     productStore.setFilter('category', defaultCategory.value)
   } else {
     productStore.resetFilters()
   }
+  await productStore.fetchProducts()
 })
 
 onUnmounted(() => productStore.resetFilters())

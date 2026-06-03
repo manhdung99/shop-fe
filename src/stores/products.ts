@@ -1,10 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Product, FilterState } from '@/types'
-import { mockProducts } from '@/data/mockData'
+import { productApi } from '@/api/productApi'
 
 export const useProductStore = defineStore('products', () => {
-  const products = ref<Product[]>([...mockProducts])
+  const products = ref<Product[]>([])
+  const loading = ref(false)
+  const error = ref('')
+  const totalPages = ref(0)
+  const totalElements = ref(0)
+
   const filters = ref<FilterState>({
     category: '',
     minPrice: null,
@@ -13,64 +18,47 @@ export const useProductStore = defineStore('products', () => {
     sort: 'newest',
   })
 
+  // Fetch từ API
+  async function fetchProducts(extraParams: Record<string, any> = {}) {
+    loading.value = true
+    error.value = ''
+    try {
+      const res = await productApi.getAll({
+        category: filters.value.category || undefined,
+        minPrice: filters.value.minPrice ?? undefined,
+        maxPrice: filters.value.maxPrice ?? undefined,
+        sort: filters.value.sort,
+        size: 100, // lấy nhiều để filter client-side sizes
+        ...extraParams,
+      })
+      products.value = res.content
+      totalPages.value = res.totalPages
+      totalElements.value = res.totalElements
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Lỗi tải sản phẩm'
+      console.error(e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Filter client-side cho sizes (sizes filter không gửi lên BE)
   const filteredProducts = computed(() => {
     let result = [...products.value]
-    if (filters.value.category) {
-      if (filters.value.category === 'new') {
-        result = result.filter(p => p.isNew)
-      } else {
-        result = result.filter(p => p.category === filters.value.category)
-      }
-    }
-    if (filters.value.minPrice !== null) {
-      result = result.filter(p => p.price >= filters.value.minPrice!)
-    }
-    if (filters.value.maxPrice !== null) {
-      result = result.filter(p => p.price <= filters.value.maxPrice!)
-    }
     if (filters.value.sizes.length > 0) {
       result = result.filter(p =>
         filters.value.sizes.some(s => p.sizes.includes(s))
       )
     }
-    switch (filters.value.sort) {
-      case 'newest':
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        break
-      case 'price-asc':
-        result.sort((a, b) => a.price - b.price)
-        break
-      case 'price-desc':
-        result.sort((a, b) => b.price - a.price)
-        break
-      case 'popular':
-        result.sort((a, b) => b.reviewCount - a.reviewCount)
-        break
-    }
     return result
   })
 
-  function getById(id: number) {
-    return products.value.find(p => p.id === id)
+  function getById(id: number | string) {
+    return products.value.find(p => String(p.id) === String(id))
   }
 
   function getBySlug(slug: string) {
     return products.value.find(p => p.slug === slug)
-  }
-
-  function addProduct(product: Product) {
-    products.value.push(product)
-  }
-
-  function updateProduct(id: number, data: Partial<Product>) {
-    const idx = products.value.findIndex(p => p.id === id)
-    if (idx !== -1) {
-      products.value[idx] = { ...products.value[idx], ...data }
-    }
-  }
-
-  function deleteProduct(id: number) {
-    products.value = products.value.filter(p => p.id !== id)
   }
 
   function setFilter(key: keyof FilterState, value: FilterState[typeof key]) {
@@ -87,10 +75,34 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  // Admin CRUD
+  async function addProduct(data: any): Promise<Product> {
+    const created = await productApi.create(data)
+    products.value.unshift(created)
+    return created
+  }
+
+  async function updateProduct(id: string, data: any): Promise<Product> {
+    const updated = await productApi.update(id, data)
+    const idx = products.value.findIndex(p => String(p.id) === String(id))
+    if (idx !== -1) products.value[idx] = updated
+    return updated
+  }
+
+  async function deleteProduct(id: string | number) {
+    await productApi.delete(String(id))
+    products.value = products.value.filter(p => String(p.id) !== String(id))
+  }
+
   return {
     products,
+    loading,
+    error,
+    totalPages,
+    totalElements,
     filters,
     filteredProducts,
+    fetchProducts,
     getById,
     getBySlug,
     addProduct,

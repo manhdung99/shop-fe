@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useOrderStore } from '@/stores/orders'
 import type { Order } from '@/types'
 import { formatPrice, formatDate } from '@/utils/format'
@@ -181,6 +181,8 @@ const orderStore = useOrderStore()
 const search = ref('')
 const filterStatus = ref('')
 const selectedOrder = ref<Order | null>(null)
+
+onMounted(() => orderStore.fetchOrders())
 
 const statusTabs = computed(() => [
   { label: 'Tất cả', value: '', count: 0 },
@@ -225,8 +227,8 @@ function viewOrder(order: Order) {
   selectedOrder.value = order
 }
 
-function updateStatus(id: string, status: Order['status']) {
-  orderStore.updateStatus(id, status)
+async function updateStatus(id: string, status: Order['status']) {
+  await orderStore.updateStatus(id, status)
 }
 </script>
 

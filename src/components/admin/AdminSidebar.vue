@@ -55,6 +55,17 @@
         Về trang shop
       </RouterLink>
 
+      <!-- Logout -->
+      <button
+        @click="logout"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-rose-500/10 hover:text-rose-400 transition-all mt-1"
+      >
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Đăng xuất
+      </button>
+
       <!-- Admin info -->
       <div class="flex items-center gap-3 px-3 py-2.5 mt-1">
         <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -70,12 +81,21 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/orders'
+import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
 
 const route = useRoute()
+const router = useRouter()
 const orderStore = useOrderStore()
-const pendingCount = orderStore.orders.filter(o => o.status === 'pending').length
+const authStore = useAuthStore()
+const pendingCount = computed(() => orderStore.orders.filter(o => o.status === 'pending').length)
+
+function logout() {
+  authStore.logout()
+  router.push('/admin/login')
+}
 
 const navItems = [
   {
@@ -97,7 +117,7 @@ const navItems = [
     to: '/admin/orders',
     label: 'Đơn hàng',
     icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>',
-    badge: pendingCount > 0 ? String(pendingCount) : undefined,
+    badge: pendingCount.value > 0 ? String(pendingCount.value) : undefined,
   },
 ]
 

@@ -339,7 +339,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, nextTick } from 'vue'
+import { ref, computed, reactive, nextTick, onMounted } from 'vue'
 import { useProductStore } from '@/stores/products'
 import type { Product, ColorVariant } from '@/types'
 import { formatPrice } from '@/utils/format'
@@ -482,67 +482,61 @@ function revokeOldObjectUrls() {
   })
 }
 
+// ── Fetch khi vào trang ────────────────────────────────────
+onMounted(() => productStore.fetchProducts({ size: 200 }))
+
 // ── Save / Delete ──────────────────────────────────────────
-function saveProduct() {
+const saving = ref(false)
+
+async function saveProduct() {
   if (!form.name || !form.brand || !form.price) return
   if (form.colorVariants.length === 0 || !form.colorVariants[0].color) return
 
-  const slug = form.name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-
   const PLACEHOLDER = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80'
 
-  const cleanVariants: ColorVariant[] = form.colorVariants
-    .filter(v => v.color.trim())
-    .map(v => ({
-      color: v.color.trim(),
-      // Khi có BE: thay blob URL bằng URL thật sau khi upload API
-      image: v.image || PLACEHOLDER,
-      images: [v.image || PLACEHOLDER],
-    }))
-
-  const productData: Partial<Product> = {
+  const payload = {
     name: form.name,
     brand: form.brand,
     category: form.category,
     price: form.price,
-    originalPrice: form.originalPrice || undefined,
+    originalPrice: form.originalPrice || null,
     stock: form.stock,
-    colorVariants: cleanVariants,
-    colors: cleanVariants.map(v => v.color),
-    images: cleanVariants.map(v => v.image),
     description: form.description,
     sizes: form.sizes.split(',').map(s => s.trim()).filter(Boolean),
     isNew: form.isNew,
     isSale: form.isSale,
-    slug,
-    tags: [],
-    rating: 0,
-    reviewCount: 0,
-    createdAt: new Date().toISOString().split('T')[0],
+    colorVariants: form.colorVariants
+      .filter(v => v.color.trim())
+      .map(v => ({
+        color: v.color.trim(),
+        // blob: URL chỉ dùng preview, gửi placeholder lên BE
+        // Khi tích hợp upload API: upload file trước, lấy URL thật
+        imageUrl: v.image.startsWith('blob:') ? PLACEHOLDER : (v.image || PLACEHOLDER),
+      })),
   }
 
-  if (editingProduct.value) {
-    productStore.updateProduct(editingProduct.value.id, productData)
-  } else {
-    const newId = Math.max(...productStore.products.map(p => p.id), 0) + 1
-    productStore.addProduct({ ...productData, id: newId } as Product)
+  saving.value = true
+  try {
+    if (editingProduct.value) {
+      await productStore.updateProduct(String(editingProduct.value.id), payload)
+    } else {
+      await productStore.addProduct(payload)
+    }
+    showModal.value = false
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Lỗi lưu sản phẩm')
+  } finally {
+    saving.value = false
   }
-
-  showModal.value = false
 }
 
-function deleteProduct(id: number) {
-  deleteConfirmId.value = id
+function deleteProduct(id: number | string) {
+  deleteConfirmId.value = Number(id)
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (deleteConfirmId.value) {
-    productStore.deleteProduct(deleteConfirmId.value)
+    await productStore.deleteProduct(deleteConfirmId.value)
     deleteConfirmId.value = null
   }
 }

@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useProductStore } from '@/stores/products'
 import type { Product } from '@/types'
@@ -196,6 +196,12 @@ import QuickAddModal from '@/components/QuickAddModal.vue'
 
 const productStore = useProductStore()
 const quickAddProduct = ref<Product | null>(null)
+
+onMounted(() => {
+  if (productStore.products.length === 0) {
+    productStore.fetchProducts({ size: 50 })
+  }
+})
 
 const newProducts = computed(() =>
   productStore.products.filter(p => p.isNew).slice(0, 4)

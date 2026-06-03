@@ -145,7 +145,9 @@
 
           <div class="flex gap-3 mt-4">
             <button @click="currentStep = 1" class="btn-outline flex-1">← Quay lại</button>
-            <button @click="placeOrder" class="btn-primary flex-1 py-4">Đặt hàng</button>
+            <button @click="placeOrder" :disabled="placingOrder" class="btn-primary flex-1 py-4 disabled:opacity-60">
+              {{ placingOrder ? 'Đang xử lý...' : 'Đặt hàng' }}
+            </button>
           </div>
         </div>
 
@@ -210,11 +212,14 @@
 import { ref, computed, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { useOrderStore } from '@/stores/orders'
 import { formatPrice } from '@/utils/format'
 
 const cartStore = useCartStore()
+const orderStore = useOrderStore()
 const currentStep = ref(0)
 const orderId = ref('')
+const placingOrder = ref(false)
 const selectedShipping = ref('standard')
 const selectedPayment = ref('cod')
 
@@ -247,9 +252,32 @@ const paymentMethods = [
 const shipping = computed(() => cartStore.totalPrice >= 500000 ? 0 : 30000)
 const finalTotal = computed(() => cartStore.totalPrice + shipping.value)
 
-function placeOrder() {
-  orderId.value = `ORD-${Date.now()}`
-  cartStore.clearCart()
-  currentStep.value = 3
+async function placeOrder() {
+  placingOrder.value = true
+  try {
+    const orderData = {
+      customerName: `${form.lastName} ${form.firstName}`.trim(),
+      customerEmail: form.email,
+      customerPhone: form.phone,
+      address: `${form.address}, ${form.district}, ${form.city}`,
+      note: form.note,
+      shippingMethod: selectedShipping.value,
+      paymentMethod: selectedPayment.value,
+      items: cartStore.items.map(item => ({
+        productId: item.product.id,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+      })),
+    }
+    const created = await orderStore.addOrder(orderData)
+    orderId.value = `ORD-${created.id}`
+    cartStore.clearCart()
+    currentStep.value = 3
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Đặt hàng thất bại, vui lòng thử lại')
+  } finally {
+    placingOrder.value = false
+  }
 }
 </script>
