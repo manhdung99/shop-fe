@@ -5,13 +5,40 @@
       <div class="flex gap-2 flex-1 max-w-sm">
         <input v-model="search" type="text" placeholder="Tìm sản phẩm..." class="input-field text-sm" />
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <select v-model="filterCat" class="input-field text-sm bg-white">
           <option value="">Tất cả danh mục</option>
           <option value="men">Nam</option>
           <option value="women">Nữ</option>
           <option value="unisex">Unisex</option>
         </select>
+
+        <!-- Download file mẫu -->
+        <a
+          href="/san_pham_mau.xlsx"
+          download
+          class="flex items-center gap-1.5 text-sm border border-gray-200 px-3 py-2 rounded-xl hover:border-gray-400 transition-colors font-medium text-gray-600"
+          title="Tải file Excel mẫu"
+        >
+          <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          File mẫu
+        </a>
+
+        <!-- Import Excel -->
+        <button
+          @click="triggerImport"
+          :disabled="importing"
+          class="flex items-center gap-1.5 text-sm border border-gray-200 px-3 py-2 rounded-xl hover:border-emerald-500 hover:text-emerald-600 transition-colors font-medium text-gray-600 disabled:opacity-50"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          {{ importing ? 'Đang import...' : 'Import Excel' }}
+        </button>
+        <input ref="importFileRef" type="file" accept=".xlsx,.xls" class="hidden" @change="handleImport" />
+
         <button @click="openModal()" class="btn-primary text-sm flex items-center gap-2 whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -324,13 +351,52 @@
       <!-- Delete confirm -->
       <Transition name="fade">
         <div v-if="deleteConfirmId" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div class="bg-white p-6 max-w-sm w-full">
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
             <h3 class="font-semibold text-lg mb-2">Xác nhận xóa</h3>
             <p class="text-sm text-gray-600 mb-5">Bạn có chắc muốn xóa sản phẩm này? Hành động này không thể hoàn tác.</p>
             <div class="flex gap-3 justify-end">
               <button @click="deleteConfirmId = null" class="btn-outline text-sm">Hủy</button>
               <button @click="confirmDelete" class="btn-danger">Xóa</button>
             </div>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Import result modal -->
+      <Transition name="fade">
+        <div v-if="importResult" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                :class="importResult.failed === 0 ? 'bg-emerald-50' : 'bg-amber-50'">
+                <svg class="w-5 h-5" :class="importResult.failed === 0 ? 'text-emerald-600' : 'text-amber-500'"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    :d="importResult.failed === 0
+                      ? 'M5 13l4 4L19 7'
+                      : 'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900">Kết quả Import</h3>
+                <p class="text-sm text-gray-500">
+                  <span class="text-emerald-600 font-semibold">{{ importResult.imported }} thành công</span>
+                  <span v-if="importResult.failed > 0"> · <span class="text-rose-500 font-semibold">{{ importResult.failed }} lỗi</span></span>
+                </p>
+              </div>
+            </div>
+
+            <div v-if="importResult.errors?.length > 0" class="bg-rose-50 rounded-xl p-3 mb-4">
+              <p class="text-xs font-semibold text-rose-600 mb-2 uppercase tracking-wider">Chi tiết lỗi:</p>
+              <ul class="space-y-1">
+                <li v-for="err in importResult.errors" :key="err" class="text-xs text-rose-600">• {{ err }}</li>
+              </ul>
+            </div>
+
+            <button @click="importResult = null; productStore.fetchProducts({ size: 200 })"
+              class="btn-primary w-full text-sm">
+              Đóng &amp; Tải lại danh sách
+            </button>
           </div>
         </div>
       </Transition>
@@ -341,6 +407,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, nextTick, onMounted } from 'vue'
 import { useProductStore } from '@/stores/products'
+import { productApi } from '@/api/productApi'
 import type { Product, ColorVariant } from '@/types'
 import { formatPrice } from '@/utils/format'
 
@@ -484,6 +551,32 @@ function revokeOldObjectUrls() {
 
 // ── Fetch khi vào trang ────────────────────────────────────
 onMounted(() => productStore.fetchProducts({ size: 200 }))
+
+// ── Import Excel ────────────────────────────────────────────
+const importFileRef = ref<HTMLInputElement | null>(null)
+const importing = ref(false)
+const importResult = ref<{ imported: number; failed: number; errors: string[] } | null>(null)
+
+function triggerImport() {
+  importFileRef.value?.click()
+}
+
+async function handleImport(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+
+  importing.value = true
+  try {
+    const result = await productApi.importExcel(file)
+    importResult.value = result
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Import thất bại')
+  } finally {
+    importing.value = false
+  }
+}
 
 // ── Save / Delete ──────────────────────────────────────────
 const saving = ref(false)

@@ -77,4 +77,12 @@ export const productApi = {
   delete(id: string): Promise<void> {
     return api.delete(`/products/${id}`).then(() => {})
   },
+
+  importExcel(file: File): Promise<{ imported: number; failed: number; errors: string[] }> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/import/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(res => res.data.data)
+  },
 }
