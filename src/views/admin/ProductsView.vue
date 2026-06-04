@@ -271,8 +271,20 @@
                           class="w-28 h-36 border-2 border-dashed border-gray-300 hover:border-gray-500 bg-gray-50 hover:bg-gray-100 transition-all flex flex-col items-center justify-center gap-2 overflow-hidden relative group"
                           :title="variant.image ? 'Đổi ảnh' : 'Tải ảnh lên'"
                         >
+                          <!-- Uploading spinner -->
+                          <template v-if="variant.uploading">
+                            <img v-if="variant.image" :src="variant.image" class="absolute inset-0 w-full h-full object-cover opacity-50" />
+                            <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/70 gap-1">
+                              <svg class="w-6 h-6 text-gray-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                              </svg>
+                              <span class="text-xs text-gray-500">Đang upload...</span>
+                            </div>
+                          </template>
+
                           <!-- Has image: show it -->
-                          <template v-if="variant.image">
+                          <template v-else-if="variant.image">
                             <img
                               :src="variant.image"
                               :alt="variant.color"
@@ -408,6 +420,7 @@
 import { ref, computed, reactive, nextTick, onMounted } from 'vue'
 import { useProductStore } from '@/stores/products'
 import { productApi } from '@/api/productApi'
+import { uploadApi } from '@/api/uploadApi'
 import type { Product, ColorVariant } from '@/types'
 import { formatPrice } from '@/utils/format'
 
@@ -424,8 +437,9 @@ const fileInputRefs = ref<HTMLInputElement[]>([])
 // Form variant: thêm field `fileName` để hiển thị tên file
 interface FormVariant {
   color: string
-  image: string     // object URL (local) hoặc URL thật (từ server sau này)
-  fileName: string  // tên file để hiện thị
+  image: string      // URL thật từ BE sau khi upload (hoặc blob tạm thời lúc đang upload)
+  fileName: string   // tên file để hiển thị
+  uploading: boolean // đang upload lên BE
 }
 
 const form = reactive({
@@ -479,6 +493,7 @@ function openModal(product?: Product) {
       color: v.color,
       image: v.image,
       fileName: '',
+      uploading: false,
     }))
   } else {
     editingProduct.value = null
@@ -492,14 +507,14 @@ function openModal(product?: Product) {
     form.sizes = '39,40,41,42'
     form.isNew = false
     form.isSale = false
-    form.colorVariants = [{ color: '', image: '', fileName: '' }]
+    form.colorVariants = [{ color: '', image: '', fileName: '', uploading: false }]
   }
   showModal.value = true
 }
 
 // ── Color variant helpers ──────────────────────────────────
 function addVariant() {
-  form.colorVariants.push({ color: '', image: '', fileName: '' })
+  form.colorVariants.push({ color: '', image: '', fileName: '', uploading: false })
 }
 
 function removeVariant(idx: number) {
@@ -516,28 +531,37 @@ function triggerFileInput(idx: number) {
   })
 }
 
-function onFileChange(idx: number, event: Event) {
+async function onFileChange(idx: number, event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  input.value = ''
 
-  // Validate kích thước (5MB)
   if (file.size > 5 * 1024 * 1024) {
     alert('Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.')
     return
   }
 
-  // Revoke object URL cũ nếu có
+  // Hiện preview blob ngay lập tức để UX mượt
+  const previewUrl = URL.createObjectURL(file)
   const old = form.colorVariants[idx]?.image
   if (old?.startsWith('blob:')) URL.revokeObjectURL(old)
-
-  // Tạo preview URL
-  const objectUrl = URL.createObjectURL(file)
-  form.colorVariants[idx].image = objectUrl
+  form.colorVariants[idx].image = previewUrl
   form.colorVariants[idx].fileName = file.name
+  form.colorVariants[idx].uploading = true
 
-  // Reset input để có thể chọn lại cùng file
-  input.value = ''
+  // Upload lên BE, lấy URL thật
+  try {
+    const realUrl = await uploadApi.uploadImage(file)
+    // Thay preview blob bằng URL thật
+    URL.revokeObjectURL(previewUrl)
+    form.colorVariants[idx].image = realUrl
+    form.colorVariants[idx].uploading = false
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Upload ảnh thất bại')
+    form.colorVariants[idx].image = ''
+    form.colorVariants[idx].uploading = false
+  }
 }
 
 // Revoke tất cả blob URL khi đóng modal
@@ -585,7 +609,12 @@ async function saveProduct() {
   if (!form.name || !form.brand || !form.price) return
   if (form.colorVariants.length === 0 || !form.colorVariants[0].color) return
 
-  const PLACEHOLDER = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80'
+  // Kiểm tra nếu còn ảnh đang upload
+  const stillUploading = form.colorVariants.some(v => v.uploading)
+  if (stillUploading) {
+    alert('Vui lòng chờ ảnh upload xong trước khi lưu')
+    return
+  }
 
   const payload = {
     name: form.name,
@@ -602,9 +631,7 @@ async function saveProduct() {
       .filter(v => v.color.trim())
       .map(v => ({
         color: v.color.trim(),
-        // blob: URL chỉ dùng preview, gửi placeholder lên BE
-        // Khi tích hợp upload API: upload file trước, lấy URL thật
-        imageUrl: v.image.startsWith('blob:') ? PLACEHOLDER : (v.image || PLACEHOLDER),
+        imageUrl: v.image || '',  // URL thật từ BE sau khi upload
       })),
   }
 

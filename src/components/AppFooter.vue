@@ -6,11 +6,23 @@
 
         <!-- Brand -->
         <div class="md:col-span-1">
-          <div class="flex items-center gap-2.5 mb-4">
-            <div class="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
-              <span class="text-gray-900 font-black text-sm">S</span>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 flex-shrink-0">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                <circle cx="32" cy="32" r="32" fill="#F59E0B"/>
+                <circle cx="32" cy="32" r="26" fill="#D97706"/>
+                <circle cx="32" cy="32" r="21" fill="#1C1917"/>
+                <text x="32" y="28" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#F59E0B" letter-spacing="1.5">NMD</text>
+                <line x1="14" y1="32" x2="50" y2="32" stroke="#F59E0B" stroke-width="0.8" opacity="0.4"/>
+                <text x="32" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="#FCD34D" letter-spacing="0.5">nmd.vn</text>
+              </svg>
             </div>
-            <span class="font-black text-xl text-white tracking-tight">ShopGiayDep</span>
+            <div class="flex flex-col leading-none">
+              <span class="font-black text-lg tracking-wide">
+                <span class="text-white">GIAY</span><span class="text-amber-400">NMD</span>
+              </span>
+              <span class="text-[9px] text-gray-500 tracking-widest mt-1">THƯƠNG HIỆU GIÀY HÀNG ĐẦU VIỆT NAM</span>
+            </div>
           </div>
           <p class="text-sm text-gray-500 leading-relaxed">
             Mang đến những đôi giày chất lượng cao từ các thương hiệu hàng đầu thế giới với giá cả hợp lý nhất.

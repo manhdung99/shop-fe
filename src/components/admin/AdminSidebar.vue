@@ -3,12 +3,22 @@
     <!-- Logo -->
     <div class="px-5 py-5 border-b border-white/5">
       <RouterLink to="/" class="flex items-center gap-3 group">
-        <div class="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-          <span class="text-gray-900 font-black text-sm">S</span>
+        <!-- Badge icon -->
+        <div class="w-9 h-9 flex-shrink-0 transition-transform group-hover:scale-105">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+            <circle cx="32" cy="32" r="32" fill="#F59E0B"/>
+            <circle cx="32" cy="32" r="26" fill="#D97706"/>
+            <circle cx="32" cy="32" r="21" fill="#1C1917"/>
+            <text x="32" y="28" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#F59E0B" letter-spacing="1.5">NMD</text>
+            <line x1="14" y1="32" x2="50" y2="32" stroke="#F59E0B" stroke-width="0.8" opacity="0.4"/>
+            <text x="32" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="#FCD34D" letter-spacing="0.5">nmd.vn</text>
+          </svg>
         </div>
         <div>
-          <p class="text-white font-bold text-sm leading-none">ShopGiayDep</p>
-          <p class="text-gray-500 text-[11px] mt-0.5 font-medium">Admin Panel</p>
+          <p class="font-black text-sm leading-none tracking-wide">
+            <span class="text-white">GIAY</span><span class="text-amber-400">NMD</span>
+          </p>
+          <p class="text-gray-500 text-[10px] mt-0.5 font-medium">Admin Panel</p>
         </div>
       </RouterLink>
     </div>

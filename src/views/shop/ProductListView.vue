@@ -169,6 +169,7 @@ const defaultCategory = computed(() => {
 })
 
 const pageTitle = computed(() => {
+  if (route.query.search) return `Kết quả: "${route.query.search}"`
   const path = route.path
   if (path === '/nam') return 'Giày Nam'
   if (path === '/nu') return 'Giày Nữ'
@@ -177,10 +178,13 @@ const pageTitle = computed(() => {
 })
 
 onMounted(async () => {
+  productStore.resetFilters()
   if (defaultCategory.value) {
     productStore.setFilter('category', defaultCategory.value)
-  } else {
-    productStore.resetFilters()
+  }
+  // Đọc query param ?search= từ URL (khi navigate từ thanh tìm kiếm)
+  if (route.query.search) {
+    productStore.setFilter('search' as any, String(route.query.search))
   }
   await productStore.fetchProducts()
 })

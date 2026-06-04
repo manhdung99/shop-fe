@@ -2,13 +2,23 @@
   <div class="min-h-screen bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <!-- Logo -->
-      <div class="flex items-center justify-center gap-3 mb-10">
-        <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-          <span class="text-gray-900 font-black text-lg">S</span>
+      <div class="flex flex-col items-center gap-3 mb-10">
+        <!-- Badge large -->
+        <div class="w-16 h-16">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+            <circle cx="32" cy="32" r="32" fill="#F59E0B"/>
+            <circle cx="32" cy="32" r="26" fill="#D97706"/>
+            <circle cx="32" cy="32" r="21" fill="#1C1917"/>
+            <text x="32" y="28" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#F59E0B" letter-spacing="1.5">NMD</text>
+            <line x1="14" y1="32" x2="50" y2="32" stroke="#F59E0B" stroke-width="0.8" opacity="0.4"/>
+            <text x="32" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="#FCD34D" letter-spacing="0.5">nmd.vn</text>
+          </svg>
         </div>
-        <div>
-          <p class="text-white font-black text-xl leading-none">ShopGiayDep</p>
-          <p class="text-gray-500 text-xs mt-0.5">Admin Panel</p>
+        <div class="text-center">
+          <p class="font-black text-2xl tracking-widest leading-none">
+            <span class="text-white">GIAY</span><span class="text-amber-400">NMD</span>
+          </p>
+          <p class="text-gray-500 text-[10px] tracking-widest mt-1.5">THƯƠNG HIỆU GIÀY HÀNG ĐẦU VIỆT NAM</p>
         </div>
       </div>
 

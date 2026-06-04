@@ -1,0 +1,14 @@
+<svg viewBox="0 0 200 56" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon box -->
+  <rect width="56" height="56" rx="12" fill="#111827"/>
+  <path d="M8 39 L8 23 Q8 15 16 12 L22 9 Q26 7 29 9 Q36 13 42 23 L44 27 L44 35 Q42 39 39 39 Z" fill="white"/>
+  <rect x="7" y="39" width="38" height="5" rx="2.5" fill="#9CA3AF"/>
+  <rect x="9" y="44" width="34" height="4" rx="2" fill="#6B7280"/>
+  <path d="M17 24 Q28 30 41 26" fill="none" stroke="#1F2937" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="24" cy="14" r="1.5" fill="#E5E7EB"/>
+  <circle cx="29" cy="12" r="1.5" fill="#E5E7EB"/>
+  <!-- Text -->
+  <text x="66" y="26" font-family="'Arial Black', Arial, sans-serif" font-weight="900" font-size="18" fill="#111827" letter-spacing="-0.3">Shop</text>
+  <text x="66" y="48" font-family="'Arial Black', Arial, sans-serif" font-weight="900" font-size="18" fill="#111827" letter-spacing="-0.3">GiayDep</text>
+  <circle cx="62" cy="40" r="3.5" fill="#111827"/>
+</svg>
